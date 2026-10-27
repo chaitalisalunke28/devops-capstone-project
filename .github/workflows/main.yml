@@ -2,16 +2,29 @@ name: CI Build
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-24.04
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -32,4 +45,6 @@ jobs:
         run: flake8 --max-line-length=127 service tests
 
       - name: Run unit tests with nosetests
+        env:
+          DATABASE_URI: postgresql://postgres:postgres@localhost:5432/postgres
         run: nosetests
